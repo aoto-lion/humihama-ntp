@@ -1,0 +1,1737 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>富美浜小学校 NTP時計・放送原稿</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #fff;
+    color: #111;
+    font-family: Arial, "Meiryo", sans-serif;
+    text-align: center;
+}
+
+/* ナビゲーション */
+.navigation {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px;
+    background: #f3f3f3;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navigation button {
+    flex: 1;
+    max-width: 150px;
+    padding: 10px 2px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.navigation button.active {
+    background: #2878c8;
+    color: white;
+    border-color: #2878c8;
+}
+
+/* ページ切り替え */
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+/* 時計 */
+.clock-area {
+    padding: 20px 5px 10px;
+}
+
+#date {
+    font-size: clamp(22px, 3vw, 34px);
+    color: #777;
+    margin: 5px 0;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+}
+
+#clock {
+    font-family: "Courier New", monospace;
+    font-size: clamp(42px, 8vw, 85px);
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    line-height: 1.3;
+}
+
+#sync {
+    font-size: 14px;
+    color: #777;
+    margin-top: 5px;
+}
+
+h2 {
+    font-size: 22px;
+    color: #555;
+    margin: 15px 0 8px;
+}
+
+#nextEvent {
+    font-size: clamp(17px, 2.5vw, 23px);
+    color: #2878c8;
+    font-weight: bold;
+    margin: 12px 5px;
+}
+
+.countdowns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px;
+    max-width: 1300px;
+    padding: 8px 20px;
+    margin: auto;
+}
+
+.card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px 6px;
+}
+
+.card.next {
+    border: 2px solid #2878c8;
+}
+
+.name {
+    font-size: 19px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.target {
+    color: #888;
+    font-size: 15px;
+}
+
+.timer {
+    color: #111;
+    font-family: "Courier New", monospace;
+    font-size: clamp(22px, 2.8vw, 32px);
+    font-weight: bold;
+    margin-top: 7px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.card.done .timer {
+    color: #16834a;
+}
+
+/* 原稿編集 */
+.editor-area {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 15px;
+    text-align: left;
+}
+
+.editor-area h2 {
+    text-align: center;
+}
+
+.editor-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.char-counter {
+    font-size: 14px;
+    color: #444;
+    font-weight: bold;
+}
+
+.save-status {
+    text-align: right;
+    color: #16834a;
+    font-size: 14px;
+}
+
+/* 役割挿入バー */
+.role-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: #f0f6fc;
+    border: 1px solid #cce0f5;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.role-bar span {
+    font-weight: bold;
+    color: #2878c8;
+    margin-right: 4px;
+}
+
+#roleChipButtons {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.role-chip {
+    padding: 5px 12px;
+    border-radius: 15px;
+    border: 1px solid rgba(0,0,0,0.15);
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.role-chip:hover {
+    transform: scale(1.05);
+}
+
+.chip-color-0 { background: #e3f2fd; color: #0d47a1; }
+.chip-color-1 { background: #fce4ec; color: #880e4f; }
+.chip-color-2 { background: #e8f5e9; color: #1b5e20; }
+.chip-color-3 { background: #fff8e1; color: #e65100; }
+.chip-color-4 { background: #f3e5f5; color: #4a148c; }
+
+/* 担当者名前登録パネル */
+.role-config-panel {
+    background: #f8f9fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin-bottom: 12px;
+    display: none;
+}
+
+.role-config-panel.open {
+    display: block;
+}
+
+.role-config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.add-role-btn {
+    padding: 5px 12px;
+    background: #2878c8;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.add-role-btn:hover {
+    opacity: 0.9;
+}
+
+.role-config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.role-config-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    background: #fff;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.role-config-item label {
+    font-weight: bold;
+    white-space: nowrap;
+    color: #444;
+}
+
+.role-config-item input {
+    width: 100%;
+    padding: 5px 7px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.remove-role-btn {
+    padding: 4px 8px;
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.remove-role-btn:hover {
+    background: #ffcdd2;
+}
+
+#scriptEditor {
+    display: block;
+    width: 100%;
+    min-height: 45vh;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-family: "Meiryo", sans-serif;
+    font-size: 20px;
+    line-height: 1.9;
+    resize: vertical;
+    outline-color: #2878c8;
+    margin-bottom: 15px;
+}
+
+/* 編集ページのプリセット設定エリア */
+.preset-settings-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e1e4e8;
+}
+
+.preset-setting-box h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.preset-setting-box textarea {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    font-size: 14px;
+    font-family: "Meiryo", sans-serif;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    resize: vertical;
+}
+
+/* 本番 */
+.combined-area {
+    max-width: 1100px;
+    margin: auto;
+    padding: 10px 15px;
+}
+
+.combined-area .clock-area {
+    padding: 10px 5px;
+}
+
+#dateCombined {
+    font-size: clamp(22px, 3vw, 34px);
+    color: #777;
+    margin: 5px 0;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+}
+
+#clockCombined {
+    font-family: "Courier New", monospace;
+    font-size: clamp(42px, 8vw, 85px);
+    font-weight: bold;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    line-height: 1.3;
+}
+
+/* 役割フィルター */
+.role-filter-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e1e4e8;
+    padding: 8px 15px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.role-filter-bar span {
+    font-weight: bold;
+    color: #555;
+}
+
+.filter-btn {
+    padding: 5px 12px;
+    border-radius: 15px;
+    border: 1px solid #ccc;
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.filter-btn.active {
+    background: #2878c8;
+    color: #fff;
+    border-color: #2878c8;
+    font-weight: bold;
+}
+
+/* 本番ページのプリセット表示エリア（原稿サイズに連動） */
+.preset-preview-box {
+    margin: 10px auto;
+    padding: 15px 20px;
+    border: 1px dashed #2878c8;
+    border-radius: 8px;
+    background: #f4f8fc;
+    text-align: left;
+    font-family: "Meiryo", sans-serif;
+    font-size: 22px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.script-display {
+    margin: 10px auto;
+    padding: 25px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    text-align: left;
+    font-family: "Meiryo", sans-serif;
+    font-size: 22px;
+    line-height: 2;
+    overflow-wrap: break-word;
+    min-height: 220px;
+}
+
+/* 行ごとの役割表示スタイル */
+.script-line {
+    padding: 4px 10px;
+    margin: 4px 0;
+    border-radius: 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.script-line.dimmed {
+    opacity: 0.25;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.72em;
+    font-weight: bold;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.line-text {
+    white-space: pre-wrap;
+    flex: 1;
+}
+
+.line-role-0 { background: #f0f7ff; border-left: 5px solid #1976d2; }
+.badge-role-0 { background: #1976d2; color: #fff; }
+
+.line-role-1 { background: #fff0f5; border-left: 5px solid #c2185b; }
+.badge-role-1 { background: #c2185b; color: #fff; }
+
+.line-role-2 { background: #f1f8e9; border-left: 5px solid #388e3c; }
+.badge-role-2 { background: #388e3c; color: #fff; }
+
+.line-role-3 { background: #fff8e1; border-left: 5px solid #f57c00; }
+.badge-role-3 { background: #f57c00; color: #fff; }
+
+.line-role-4 { background: #f3e5f5; border-left: 5px solid #7b1fa2; }
+.badge-role-4 { background: #7b1fa2; color: #fff; }
+
+.script-title {
+    font-size: 17px;
+    font-weight: bold;
+    color: #777;
+    margin: 12px 0 4px;
+    text-align: left;
+}
+
+/* お知らせページ */
+.news-area {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 15px;
+    text-align: left;
+}
+
+.news-area h2 {
+    text-align: center;
+}
+
+.news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.news-card {
+    background: #f9f9f9;
+    border: 1px solid #e1e4e8;
+    border-left: 5px solid #2878c8;
+    border-radius: 6px;
+    padding: 15px 20px;
+}
+
+.news-date {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.news-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #222;
+    margin-bottom: 8px;
+}
+
+.news-content {
+    font-size: 15px;
+    color: #444;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.news-link-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: #2878c8;
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+.news-link-btn:hover {
+    opacity: 0.9;
+}
+
+/* お問い合わせページ */
+.contact-area {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 15px;
+}
+
+.fallback-box {
+    margin-bottom: 15px;
+    padding: 12px;
+    background: #f0f6fc;
+    border: 1px solid #cce0f5;
+    border-radius: 8px;
+}
+
+.fallback-btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #2878c8;
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 15px;
+    border-radius: 6px;
+}
+
+.fallback-btn:hover {
+    opacity: 0.9;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 640px;
+    height: 650px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+}
+
+.form-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* サイズ調整用コントロールパネル */
+.size-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: 1px solid #e1e4e8;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.size-control-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+    color: #555;
+    font-weight: bold;
+}
+
+.size-controls button {
+    padding: 6px 12px;
+    font-size: 13px;
+    background: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.size-controls button:hover {
+    background: #e6e6e6;
+}
+
+.controls {
+    margin: 10px;
+}
+
+.controls button,
+.editor-buttons button {
+    padding: 10px 16px;
+    font-size: 14px;
+    background: #eee;
+    color: #222;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+.editor-buttons {
+    margin-top: 10px;
+    text-align: right;
+}
+
+.footer {
+    color: #999;
+    font-size: 12px;
+    padding: 12px;
+}
+
+@media (max-width: 650px) {
+    .navigation button {
+        font-size: 10px;
+        padding: 8px 1px;
+    }
+
+    .countdowns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 8px;
+        gap: 7px;
+    }
+
+    .card {
+        padding: 10px 3px;
+    }
+
+    .name {
+        font-size: 16px;
+    }
+
+    .timer {
+        font-size: clamp(18px, 5vw, 25px);
+    }
+
+    #clock {
+        letter-spacing: 0;
+    }
+
+    .script-display {
+        padding: 15px;
+    }
+
+    .preset-settings-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 画面のふちの赤い点滅警告 */
+@keyframes edgeFlashRed {
+    0% { box-shadow: inset 0 0 0 0 rgba(255, 0, 0, 0); }
+    25% { box-shadow: inset 0 0 45px 15px rgba(255, 0, 0, 0.85); }
+    100% { box-shadow: inset 0 0 0 0 rgba(255, 0, 0, 0); }
+}
+
+#screenFlashOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.flash-active {
+    animation: edgeFlashRed 0.7s ease-out;
+}
+
+
+/* 原稿ファイル保存・読み込みバー */
+.backup-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #f8f9fa;
+    border: 1px solid #dcdcdc;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.backup-bar-label {
+    font-weight: bold;
+    color: #333;
+}
+
+.backup-bar-buttons {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.backup-btn {
+    padding: 6px 12px;
+    border-radius: 5px;
+    border: 1px solid #bbb;
+    background: #fff;
+    color: #222;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.backup-btn.primary {
+    background: #2878c8;
+    color: #fff;
+    border-color: #2878c8;
+}
+
+.backup-btn:hover {
+    opacity: 0.9;
+}
+
+</style>
+</head>
+
+<body>
+<div id="screenFlashOverlay"></div>
+
+<!-- ナビゲーション -->
+<div class="navigation">
+    <button id="navClock" class="active" onclick="showPage('clock')">時計</button>
+    <button id="navEditor" onclick="showPage('editor')">原稿編集</button>
+    <button id="navCombined" onclick="showPage('combined')">本番</button>
+    <button id="navNews" onclick="showPage('news')">お知らせ</button>
+    <button id="navContact" onclick="showPage('contact')">お問い合わせ</button>
+</div>
+
+<!-- 時計ページ -->
+<div id="clockPage" class="page active">
+    <div class="clock-area">
+        <div id="date">----年--月--日</div>
+        <div id="clock">00:00:00.00</div>
+        <div id="sync">NTP同期中...</div>
+    </div>
+
+    <h2>放送イベントまでのカウントダウン</h2>
+    <div id="nextEvent">次の予定を確認中...</div>
+    <div class="countdowns" id="countdowns"></div>
+
+    <div class="controls">
+        <button onclick="syncNTP()">NTP再同期</button>
+        <button onclick="toggleFullscreen()">全画面表示</button>
+    </div>
+</div>
+
+<!-- 原稿編集ページ -->
+<div id="editorPage" class="page">
+    <div class="editor-area">
+        <h2>放送原稿編集</h2>
+        
+        <div class="editor-toolbar">
+            <div class="char-counter" id="charCounter">文字数: 0文字 (読下時間目安: 約 0秒)</div>
+            <div class="save-status" id="saveStatus">保存されています</div>
+        </div>
+
+        <div class="backup-bar">
+            <span class="backup-bar-label">💾 ファイル保存・復元（バージョンアップ対策）:</span>
+            <div class="backup-bar-buttons">
+                <button type="button" class="backup-btn primary" onclick="exportBackupFile()">ファイルに保存</button>
+                <button type="button" class="backup-btn" onclick="exportBackupFileWithName()">名前を決めて保存</button>
+                <button type="button" class="backup-btn" onclick="triggerImportFile()">ファイルから読み込み</button>
+                <input type="file" id="backupFileInput" accept=".txt,text/plain,.json,application/json" style="display:none;" onchange="handleImportFile(event)">
+            </div>
+        </div>
+
+        <div class="role-bar">
+            <span>役割を挿入:</span>
+            <div id="roleChipButtons"></div>
+            <button type="button" class="role-chip" style="background:#fff;" onclick="toggleRoleConfig()">⚙ 担当者の名前を登録</button>
+        </div>
+
+        <!-- 担当者名事前登録パネル -->
+        <div class="role-config-panel" id="roleConfigPanel">
+            <div class="role-config-header">
+                <div style="font-size:13px; font-weight:bold; color:#333;">担当者の名前を事前登録（空欄の場合は「Aさん」「Bさん」…になります）</div>
+                <button type="button" class="add-role-btn" onclick="addRoleSlot()">＋ 枠を追加する</button>
+            </div>
+            <div class="role-config-grid" id="roleConfigGrid"></div>
+        </div>
+        
+        <textarea id="scriptEditor" placeholder="ここに放送原稿を入力してください...&#10;例：&#10;[Aさん] みなさん、こんにちは。&#10;[Bさん] 今日の給食のメニューを紹介します。" oninput="onScriptInput()"></textarea>
+        
+        <div class="editor-buttons">
+            <button onclick="clearScript()">原稿を全消去</button>
+        </div>
+
+        <div class="preset-settings-container">
+            <div class="preset-setting-box">
+                <h3>上部プリセット設定（本番画面の上部に表示）</h3>
+                <textarea id="presetTopInput" placeholder="上のプリセット文言を入力..." oninput="savePresets()"></textarea>
+            </div>
+            <div class="preset-setting-box">
+                <h3>下部プリセット設定（本番画面の下部に表示）</h3>
+                <textarea id="presetBottomInput" placeholder="下のプリセット文言を入力..." oninput="savePresets()"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 本番ページ -->
+<div id="combinedPage" class="page">
+    <div class="combined-area">
+        <div class="clock-area">
+            <div id="dateCombined">----年--月--日</div>
+            <div id="clockCombined">00:00:00.00</div>
+            <div id="syncCombined">NTP同期中...</div>
+        </div>
+
+        <div class="size-controls">
+            <div class="size-control-group">
+                <span>時刻サイズ:</span>
+                <button onclick="changeClockSize(-4)">小さく</button>
+                <button onclick="resetClockSize()">標準</button>
+                <button onclick="changeClockSize(4)">大きく</button>
+            </div>
+            <div class="size-control-group">
+                <span>原稿サイズ:</span>
+                <button onclick="changeScriptSize(-2)">小さく</button>
+                <button onclick="resetScriptSize()">標準</button>
+                <button onclick="changeScriptSize(2)">大きく</button>
+            </div>
+        </div>
+
+        <div class="role-filter-bar" id="roleFilterBar" style="display:none;">
+            <span>担当者ハイライト:</span>
+            <div id="roleFilterButtons" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+        </div>
+
+        <div class="script-title">上部プリセット</div>
+        <div class="preset-preview-box" id="topPresetPreview"></div>
+
+        <div class="script-title">放送原稿</div>
+        <div class="script-display" id="scriptDisplay">まだ原稿が入力されていません。</div>
+
+        <div class="script-title">下部プリセット</div>
+        <div class="preset-preview-box" id="bottomPresetPreview"></div>
+
+        <div class="controls">
+            <button onclick="syncNTP()">NTP再同期</button>
+            <button onclick="toggleFullscreen()">全画面表示</button>
+        </div>
+    </div>
+</div>
+
+<!-- お知らせページ -->
+<div id="newsPage" class="page">
+    <div class="news-area">
+        <h2>お知らせ・更新情報</h2>
+        <div style="position: relative; width: 100%; height: 0; padding-top: 141.4286%;
+ padding-bottom: 0; box-shadow: 0 2px 8px 0 rgba(63,69,81,0.16); margin-top: 1.6em; margin-bottom: 0.9em; overflow: hidden;
+ border-radius: 8px; will-change: transform;">
+  <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0;margin: 0;"
+    src="https://www.canva.com/design/DAHb_QNRwnY/3BAYrwEMhtXSnd9xiPu_JA/view?embed" allowfullscreen="allowfullscreen" allow="fullscreen">
+  </iframe>
+</div>
+はぎわら　あおとさんによる<a href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAHb_QNRwnY&#x2F;3BAYrwEMhtXSnd9xiPu_JA&#x2F;view?utm_content=DAHb_QNRwnY&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">おしらせ</a>
+    </div>
+</div>
+
+<!-- お問い合わせページ -->
+<div id="contactPage" class="page">
+    <div class="contact-area">
+        <h2>お問い合わせ</h2>
+        <div class="fallback-box">
+            <p style="margin: 0 0 10px; font-size: 14px; color: #444;">下のフォームが表示されない場合は、こちらのボタンから直接開いてください。</p>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLScCw6BBf716j8XRbwbkVHxJBkK5hnsOkv8q18nhjd0dv_xhDA/viewform" target="_blank" rel="noopener noreferrer" class="fallback-btn">Googleフォームを別画面で開く</a>
+        </div>
+        <div class="form-container" id="formContainer"></div>
+    </div>
+</div>
+
+<div class="footer">
+    富美浜小学校専用 ｜ Narikakun NTP
+</div>
+
+<script>
+// ===================================
+// 学校の予定
+// ===================================
+const schedules = [
+    { name: "給食開始", hour: 12, minute: 45, second: 0 },
+    { name: "給食終了", hour: 12, minute: 50, second: 0 },
+    { name: "掃除勧告", hour: 13, minute: 15, second: 0 },
+    { name: "掃除開始", hour: 13, minute: 20, second: 0 },
+    { name: "爆音", hour: 13, minute: 29, second: 10, warnFlash: true },
+    { name: "掃除終了5分前", hour: 13, minute: 30, second: 0 }
+];
+
+let formLoaded = false;
+
+function showPage(page) {
+    document.querySelectorAll(".page").forEach(p => {
+        p.classList.remove("active");
+    });
+    document.querySelectorAll(".navigation button").forEach(b => {
+        b.classList.remove("active");
+    });
+    
+    const targetPage = document.getElementById(page + "Page");
+    if (targetPage) {
+        targetPage.classList.add("active");
+    }
+
+    const navMap = {
+        clock: "navClock",
+        editor: "navEditor",
+        combined: "navCombined",
+        news: "navNews",
+        contact: "navContact"
+    };
+
+    if (navMap[page]) {
+        const navBtn = document.getElementById(navMap[page]);
+        if (navBtn) {
+            navBtn.classList.add("active");
+        }
+    }
+
+    if (page === "combined") {
+        updateScriptDisplay();
+        renderPresetPreviews();
+    }
+
+    if (page === "contact" && !formLoaded) {
+        const container = document.getElementById("formContainer");
+        if (container) {
+            container.innerHTML = '<iframe src="https://docs.google.com/forms/d/e/1FAIpQLScCw6BBf716j8XRbwbkVHxJBkK5hnsOkv8q18nhjd0dv_xhDA/viewform?embedded=true" width="640" height="613" frameborder="0" marginheight="0" marginwidth="0">読み込んでいます…</iframe>';
+            formLoaded = true;
+        }
+    }
+
+    updateClock();
+}
+
+const STORAGE_KEY = "fumihama_broadcast_script";
+const PRESET_TOP_KEY = "fumihama_preset_top";
+const PRESET_BOTTOM_KEY = "fumihama_preset_bottom";
+const ROLE_LIST_KEY = "fumihama_role_list_v2";
+
+const DEFAULT_PRESET_TOP = "これからお昼の放送を始めます\n今日の放送内容は\n給食紹介";
+const DEFAULT_PRESET_BOTTOM = "今日の放送は\n名前を入力\nでお送りしました\n明日の放送も楽しみにしていてください";
+
+// 初期の4枠（値は空欄ならデフォルト名が使われる）
+let roleSlots = ["", "", "", ""];
+let activeRoleFilter = "ALL";
+
+function getDefaultLabelForIndex(index) {
+    if (index === 0) return "Aさん";
+    if (index === 1) return "Bさん";
+    if (index === 2) return "Cさん";
+    if (index === 3) return "全員";
+    // 5枠目以降は Dさん, Eさん, Fさん...
+    const charCode = 65 + (index - 1); // index 4 -> 68 ('D')
+    if (charCode <= 90) {
+        return String.fromCharCode(charCode) + "さん";
+    }
+    return "担当者" + (index + 1);
+}
+
+function getEffectiveRoleNameByIndex(index) {
+    const val = roleSlots[index];
+    return val && val.trim() !== "" ? val.trim() : getDefaultLabelForIndex(index);
+}
+
+function loadRoleNames() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(ROLE_LIST_KEY));
+        if (Array.isArray(saved) && saved.length > 0) {
+            roleSlots = saved.map(item => (typeof item === "string" ? item : ""));
+        } else {
+            roleSlots = ["", "", "", ""];
+        }
+    } catch (e) {
+        roleSlots = ["", "", "", ""];
+    }
+    renderRoleUI();
+}
+
+function saveRoleNames() {
+    localStorage.setItem(ROLE_LIST_KEY, JSON.stringify(roleSlots));
+    renderRoleChips();
+}
+
+function renderRoleUI() {
+    renderRoleChips();
+    renderRoleConfigGrid();
+}
+
+function renderRoleChips() {
+    const container = document.getElementById("roleChipButtons");
+    if (!container) return;
+    container.innerHTML = "";
+
+    roleSlots.forEach((_, idx) => {
+        const name = getEffectiveRoleNameByIndex(idx);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `role-chip chip-color-${idx % 5}`;
+        btn.textContent = `[${name}]`;
+        btn.onclick = () => insertRoleTag(name);
+        container.appendChild(btn);
+    });
+}
+
+function renderRoleConfigGrid() {
+    const grid = document.getElementById("roleConfigGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    roleSlots.forEach((val, idx) => {
+        const item = document.createElement("div");
+        item.className = "role-config-item";
+
+        const label = document.createElement("label");
+        label.textContent = `枠${idx + 1}:`;
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = getDefaultLabelForIndex(idx);
+        input.value = val;
+        input.oninput = (e) => {
+            roleSlots[idx] = e.target.value;
+            saveRoleNames();
+        };
+
+        item.appendChild(label);
+        item.appendChild(input);
+
+        if (roleSlots.length > 1) {
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "remove-role-btn";
+            delBtn.textContent = "削除";
+            delBtn.onclick = () => removeRoleSlot(idx);
+            item.appendChild(delBtn);
+        }
+
+        grid.appendChild(item);
+    });
+}
+
+function addRoleSlot() {
+    roleSlots.push("");
+    saveRoleNames();
+    renderRoleConfigGrid();
+}
+
+function removeRoleSlot(index) {
+    if (roleSlots.length <= 1) return;
+    roleSlots.splice(index, 1);
+    saveRoleNames();
+    renderRoleConfigGrid();
+}
+
+function toggleRoleConfig() {
+    const panel = document.getElementById("roleConfigPanel");
+    if (panel) {
+        panel.classList.toggle("open");
+    }
+}
+
+function loadScript() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    document.getElementById("scriptEditor").value = saved || "";
+    updateCharCounter();
+    updateScriptDisplay();
+}
+
+function saveScript() {
+    const script = document.getElementById("scriptEditor").value;
+    localStorage.setItem(STORAGE_KEY, script);
+    document.getElementById("saveStatus").textContent = "● 自動保存済み";
+    updateCharCounter();
+    updateScriptDisplay();
+}
+
+function onScriptInput() {
+    saveScript();
+}
+
+// 役割タグの挿入
+function insertRoleTag(roleName) {
+    const editor = document.getElementById("scriptEditor");
+    const start = editor.selectionStart;
+    const val = editor.value;
+
+    const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+    const lineEndIdx = val.indexOf("\n", start);
+    const lineEnd = lineEndIdx === -1 ? val.length : lineEndIdx;
+    const currentLine = val.substring(lineStart, lineEnd);
+
+    const roleRegex = /^\s*[\[［][^\]］]+[\]］]\s*/;
+    let newLine;
+    if (roleRegex.test(currentLine)) {
+        newLine = currentLine.replace(roleRegex, `[${roleName}] `);
+    } else {
+        newLine = `[${roleName}] ` + currentLine;
+    }
+
+    editor.value = val.substring(0, lineStart) + newLine + val.substring(lineEnd);
+    const newCursorPos = lineStart + newLine.length;
+    editor.focus();
+    editor.setSelectionRange(newCursorPos, newCursorPos);
+    saveScript();
+}
+
+function updateCharCounter() {
+    const text = document.getElementById("scriptEditor").value;
+    const cleanText = text.replace(/^[\[［][^\]］]+[\]］]\s*/gm, "");
+    const charCount = cleanText.length;
+    const seconds = Math.round(charCount * 0.2);
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    let timeText = mins > 0 ? `約 ${mins}分 ${secs}秒` : `約 ${secs}秒`;
+    if (charCount === 0) timeText = "約 0秒";
+
+    document.getElementById("charCounter").textContent = `文字数: ${charCount}文字 (読下時間目安: ${timeText})`;
+}
+
+function updateScriptDisplay() {
+    const script = document.getElementById("scriptEditor").value;
+    const displayEl = document.getElementById("scriptDisplay");
+    const filterBar = document.getElementById("roleFilterBar");
+    const filterButtons = document.getElementById("roleFilterButtons");
+
+    if (!script.trim()) {
+        displayEl.textContent = "まだ原稿が入力されていません。";
+        if (filterBar) filterBar.style.display = "none";
+        return;
+    }
+
+    const lines = script.split("\n");
+    const roleMap = new Map();
+    let colorIndex = 0;
+
+    const roleRegex = /^\s*[\[［]([^\]］]+)[\]］]\s*(.*)$/;
+    lines.forEach(line => {
+        const match = line.match(roleRegex);
+        if (match) {
+            const roleName = match[1].trim();
+            if (!roleMap.has(roleName)) {
+                roleMap.set(roleName, colorIndex % 5);
+                colorIndex++;
+            }
+        }
+    });
+
+    if (roleMap.size > 0 && filterBar && filterButtons) {
+        filterBar.style.display = "flex";
+        if (activeRoleFilter !== "ALL" && !roleMap.has(activeRoleFilter)) {
+            activeRoleFilter = "ALL";
+        }
+        filterButtons.innerHTML = "";
+
+        const allBtn = document.createElement("button");
+        allBtn.className = "filter-btn" + (activeRoleFilter === "ALL" ? " active" : "");
+        allBtn.textContent = "全員表示";
+        allBtn.onclick = () => {
+            activeRoleFilter = "ALL";
+            updateScriptDisplay();
+        };
+        filterButtons.appendChild(allBtn);
+
+        roleMap.forEach((cIdx, rName) => {
+            const btn = document.createElement("button");
+            btn.className = "filter-btn" + (activeRoleFilter === rName ? " active" : "");
+            btn.textContent = rName;
+            btn.onclick = () => {
+                activeRoleFilter = rName;
+                updateScriptDisplay();
+            };
+            filterButtons.appendChild(btn);
+        });
+    } else if (filterBar) {
+        filterBar.style.display = "none";
+        activeRoleFilter = "ALL";
+    }
+
+    displayEl.innerHTML = "";
+    let currentRole = null;
+
+    lines.forEach(line => {
+        const match = line.match(roleRegex);
+        const lineDiv = document.createElement("div");
+
+        if (match) {
+            const roleName = match[1].trim();
+            const content = match[2];
+            currentRole = roleName;
+            const cIdx = roleMap.get(roleName);
+
+            lineDiv.className = `script-line line-role-${cIdx}`;
+            if (activeRoleFilter !== "ALL" && activeRoleFilter !== roleName) {
+                lineDiv.classList.add("dimmed");
+            }
+
+            const badge = document.createElement("span");
+            badge.className = `role-badge badge-role-${cIdx}`;
+            badge.textContent = roleName;
+
+            const textSpan = document.createElement("span");
+            textSpan.className = "line-text";
+            textSpan.textContent = content || " ";
+
+            lineDiv.appendChild(badge);
+            lineDiv.appendChild(textSpan);
+        } else {
+            if (currentRole !== null && line.trim() !== "") {
+                const cIdx = roleMap.get(currentRole);
+                lineDiv.className = `script-line line-role-${cIdx}`;
+                if (activeRoleFilter !== "ALL" && activeRoleFilter !== currentRole) {
+                    lineDiv.classList.add("dimmed");
+                }
+                const textSpan = document.createElement("span");
+                textSpan.className = "line-text";
+                textSpan.textContent = line;
+                lineDiv.appendChild(textSpan);
+            } else {
+                if (line.trim() === "") {
+                    currentRole = null;
+                }
+                lineDiv.style.whiteSpace = "pre-wrap";
+                lineDiv.style.minHeight = "1em";
+                lineDiv.textContent = line;
+            }
+        }
+        displayEl.appendChild(lineDiv);
+    });
+}
+
+function clearScript() {
+    document.getElementById("scriptEditor").value = "";
+    saveScript();
+}
+
+function loadPresets() {
+    const topSaved = localStorage.getItem(PRESET_TOP_KEY);
+    const bottomSaved = localStorage.getItem(PRESET_BOTTOM_KEY);
+
+    document.getElementById("presetTopInput").value = topSaved !== null ? topSaved : DEFAULT_PRESET_TOP;
+    document.getElementById("presetBottomInput").value = bottomSaved !== null ? bottomSaved : DEFAULT_PRESET_BOTTOM;
+}
+
+function savePresets() {
+    const topText = document.getElementById("presetTopInput").value;
+    const bottomText = document.getElementById("presetBottomInput").value;
+    localStorage.setItem(PRESET_TOP_KEY, topText);
+    localStorage.setItem(PRESET_BOTTOM_KEY, bottomText);
+    renderPresetPreviews();
+}
+
+function renderPresetPreviews() {
+    const topPreview = document.getElementById("topPresetPreview");
+    const bottomPreview = document.getElementById("bottomPresetPreview");
+    if (!topPreview || !bottomPreview) return;
+
+    const topText = localStorage.getItem(PRESET_TOP_KEY) !== null ? localStorage.getItem(PRESET_TOP_KEY) : DEFAULT_PRESET_TOP;
+    const bottomText = localStorage.getItem(PRESET_BOTTOM_KEY) !== null ? localStorage.getItem(PRESET_BOTTOM_KEY) : DEFAULT_PRESET_BOTTOM;
+
+    topPreview.textContent = topText || "（上部プリセット未設定）";
+    bottomPreview.textContent = bottomText || "（下部プリセット未設定）";
+}
+
+const CLOCK_SIZE_KEY = "fumihama_clock_font_size";
+const SCRIPT_SIZE_KEY = "fumihama_script_font_size";
+
+let currentClockSize = parseInt(localStorage.getItem(CLOCK_SIZE_KEY)) || 75;
+let currentScriptSize = parseInt(localStorage.getItem(SCRIPT_SIZE_KEY)) || 22;
+
+function applyFontSizes() {
+    const clockEl = document.getElementById("clockCombined");
+    const scriptEl = document.getElementById("scriptDisplay");
+    const topPresetEl = document.getElementById("topPresetPreview");
+    const bottomPresetEl = document.getElementById("bottomPresetPreview");
+
+    if (clockEl) {
+        clockEl.style.fontSize = currentClockSize + "px";
+    }
+    if (scriptEl) {
+        scriptEl.style.fontSize = currentScriptSize + "px";
+    }
+    if (topPresetEl) {
+        topPresetEl.style.fontSize = currentScriptSize + "px";
+    }
+    if (bottomPresetEl) {
+        bottomPresetEl.style.fontSize = currentScriptSize + "px";
+    }
+}
+
+function changeClockSize(delta) {
+    currentClockSize = Math.max(24, Math.min(200, currentClockSize + delta));
+    localStorage.setItem(CLOCK_SIZE_KEY, currentClockSize);
+    applyFontSizes();
+}
+
+function resetClockSize() {
+    currentClockSize = 75;
+    localStorage.removeItem(CLOCK_SIZE_KEY);
+    applyFontSizes();
+}
+
+function changeScriptSize(delta) {
+    currentScriptSize = Math.max(14, Math.min(60, currentScriptSize + delta));
+    localStorage.setItem(SCRIPT_SIZE_KEY, currentScriptSize);
+    applyFontSizes();
+}
+
+function resetScriptSize() {
+    currentScriptSize = 22;
+    localStorage.removeItem(SCRIPT_SIZE_KEY);
+    applyFontSizes();
+}
+
+let timeOffset = 0;
+let ntpSynced = false;
+let syncRunning = false;
+
+async function syncNTP() {
+    if (syncRunning) return;
+    syncRunning = true;
+    setSyncStatus("NTPサーバーと同期中...", "#777");
+
+    try {
+        const before = Date.now();
+        const response = await fetch(
+            "https://dev.narikakun.net/webapi/ntp?ct=" + before,
+            { cache: "no-store" }
+        );
+        if (!response.ok) {
+            throw new Error("NTP接続エラー");
+        }
+        const data = await response.json();
+        const after = Date.now();
+        let serverTimestamp = data.serverTimestamp;
+
+        if (typeof serverTimestamp === "number") {
+            if (serverTimestamp < 100000000000) {
+                serverTimestamp *= 1000;
+            }
+        } else {
+            serverTimestamp = Date.parse(serverTimestamp);
+        }
+
+        if (!Number.isFinite(serverTimestamp)) {
+            throw new Error("時刻データが不正です");
+        }
+
+        timeOffset = serverTimestamp - (before + after) / 2;
+        ntpSynced = true;
+        setSyncStatus("● Narikakun NTP 同期成功", "#16834a");
+    } catch (error) {
+        setSyncStatus(
+            ntpSynced
+                ? "● NTP再接続失敗（前回の補正を使用中）"
+                : "● NTP接続失敗（端末時刻で動作中）",
+            "#cc3333"
+        );
+    } finally {
+        syncRunning = false;
+    }
+}
+
+function setSyncStatus(message, color) {
+    ["sync", "syncCombined"].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = message;
+            element.style.color = color;
+        }
+    });
+}
+
+function getNow() {
+    return Date.now() + timeOffset;
+}
+
+function getJST() {
+    return new Date(getNow() + 9 * 60 * 60 * 1000);
+}
+
+function pad(value, length = 2) {
+    return String(value).padStart(length, "0");
+}
+
+function updateClock() {
+    const d = getJST();
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+    const dateText =
+        d.getUTCFullYear() + "年" +
+        (d.getUTCMonth() + 1) + "月" +
+        d.getUTCDate() + "日 (" +
+        weekdays[d.getUTCDay()] + ")";
+
+    const timeText =
+        pad(d.getUTCHours()) + ":" +
+        pad(d.getUTCMinutes()) + ":" +
+        pad(d.getUTCSeconds()) + "." +
+        pad(Math.floor(d.getUTCMilliseconds() / 10));
+
+    const dateEl = document.getElementById("date");
+    const clockEl = document.getElementById("clock");
+    const dateCombEl = document.getElementById("dateCombined");
+    const clockCombEl = document.getElementById("clockCombined");
+
+    if (dateEl) dateEl.textContent = dateText;
+    if (clockEl) clockEl.textContent = timeText;
+    if (dateCombEl) dateCombEl.textContent = dateText;
+    if (clockCombEl) clockCombEl.textContent = timeText;
+}
+
+let lastFlashedSecond = null;
+
+function triggerRedEdgeFlash() {
+    const overlay = document.getElementById("screenFlashOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("flash-active");
+    void overlay.offsetWidth; // リフローさせてアニメーションを再トリガー
+    overlay.classList.add("flash-active");
+}
+
+function updateCountdown() {
+    const current = getNow();
+    const jst = getJST();
+    const year = jst.getUTCFullYear();
+    const month = jst.getUTCMonth();
+    const day = jst.getUTCDate();
+    const container = document.getElementById("countdowns");
+    if (!container) return;
+
+    const results = schedules.map(s => {
+        const sec = s.second || 0;
+        const target = Date.UTC(year, month, day, s.hour - 9, s.minute, sec, 0);
+        return {
+            schedule: s,
+            remaining: target - current
+        };
+    });
+
+    // 「爆音」の画面ふち赤点滅警告判定（30秒前から10秒ごと、10秒前から1秒ごと）
+    results.forEach(item => {
+        if (item.schedule.warnFlash && item.remaining > 0 && item.remaining <= 30000) {
+            const remSec = Math.ceil(item.remaining / 1000);
+            if (remSec !== lastFlashedSecond) {
+                const shouldFlash = (remSec <= 10 && remSec >= 1) || (remSec > 10 && remSec <= 30 && remSec % 10 === 0);
+                if (shouldFlash) {
+                    lastFlashedSecond = remSec;
+                    triggerRedEdgeFlash();
+                }
+            }
+        } else if (item.schedule.warnFlash && (item.remaining <= 0 || item.remaining > 30000)) {
+            lastFlashedSecond = null;
+        }
+    });
+
+    let nextIndex = -1;
+    let shortest = Infinity;
+
+    results.forEach((item, index) => {
+        if (item.remaining >= 0 && item.remaining < shortest) {
+            shortest = item.remaining;
+            nextIndex = index;
+        }
+    });
+
+    container.innerHTML = "";
+
+    results.forEach((item, index) => {
+        const s = item.schedule;
+        const remaining = item.remaining;
+        const card = document.createElement("div");
+        card.className = "card";
+
+        if (index === nextIndex) {
+            card.classList.add("next");
+        }
+
+        let display;
+        if (remaining <= 0) {
+            display = "終了しました";
+            card.classList.add("done");
+        } else {
+            display = formatRemaining(remaining);
+        }
+
+        const name = document.createElement("div");
+        name.className = "name";
+        name.textContent = s.name;
+
+        const target = document.createElement("div");
+        target.className = "target";
+        const sec = s.second || 0;
+        target.textContent = sec > 0
+            ? pad(s.hour) + ":" + pad(s.minute) + ":" + pad(sec)
+            : pad(s.hour) + ":" + pad(s.minute);
+
+        const timer = document.createElement("div");
+        timer.className = "timer";
+        timer.textContent = display;
+
+        card.appendChild(name);
+        card.appendChild(target);
+        card.appendChild(timer);
+        container.appendChild(card);
+    });
+
+    const next = document.getElementById("nextEvent");
+    if (next) {
+        if (nextIndex >= 0) {
+            next.textContent = "次の予定：" + schedules[nextIndex].name + " まであと " + formatRemaining(results[nextIndex].remaining);
+        } else {
+            next.textContent = "本日の予定はすべて終了しました";
+        }
+    }
+}
+
+function formatRemaining(remaining) {
+    const total = Math.floor(remaining / 10) * 10;
+    const hours = Math.floor(total / 3600000);
+    const minutes = Math.floor(total % 3600000 / 60000);
+    const seconds = Math.floor(total % 60000 / 1000);
+    const centiseconds = Math.floor(total % 1000 / 10);
+
+    return (
+        pad(hours) + ":" +
+        pad(minutes) + ":" +
+        pad(seconds) + "." +
+        pad(centiseconds)
+    );
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen().catch(() => {});
+    }
+}
+
+function update() {
+    updateClock();
+    updateCountdown();
+}
+
+function loop() {
+    update();
+    setTimeout(loop, 10);
+}
+
+
+// ===================================
+// ファイル保存・読み込み（テキストファイル .txt 形式）
+// ===================================
+function buildBackupText() {
+    return document.getElementById("scriptEditor").value;
+}
+
+function getDefaultBackupFilename() {
+    const d = getJST();
+    const dateStamp =
+        d.getUTCFullYear() +
+        pad(d.getUTCMonth() + 1) +
+        pad(d.getUTCDate()) + "_" +
+        pad(d.getUTCHours()) +
+        pad(d.getUTCMinutes());
+    return `fumihama_genko_${dateStamp}.txt`;
+}
+
+function downloadBackupWithFilename(filename) {
+    const textContent = buildBackupText();
+    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    document.getElementById("saveStatus").textContent = `● 「${filename}」として保存しました`;
+}
+
+function exportBackupFile() {
+    downloadBackupWithFilename(getDefaultBackupFilename());
+}
+
+function exportBackupFileWithName() {
+    const defaultName = getDefaultBackupFilename();
+    const baseDefault = defaultName.replace(/\.txt$/i, "");
+    const inputName = window.prompt("保存するファイル名を入力してください（拡張子 .txt は自動で付きます）:", baseDefault);
+    if (inputName === null) return;
+
+    const trimmed = inputName.trim();
+    const safeName = (trimmed || baseDefault).replace(/[\\/:*?"<>|]/g, "_");
+    const finalName = safeName.toLowerCase().endsWith(".txt") ? safeName : `${safeName}.txt`;
+    downloadBackupWithFilename(finalName);
+}
+
+function triggerImportFile() {
+    const input = document.getElementById("backupFileInput");
+    if (input) {
+        input.value = "";
+        input.click();
+    }
+}
+
+function handleImportFile(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const raw = e.target.result;
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object" && (typeof parsed.script === "string" || Array.isArray(parsed.roleSlots))) {
+                if (typeof parsed.script === "string") {
+                    document.getElementById("scriptEditor").value = parsed.script;
+                    localStorage.setItem(STORAGE_KEY, parsed.script);
+                }
+                if (typeof parsed.presetTop === "string") {
+                    document.getElementById("presetTopInput").value = parsed.presetTop;
+                    localStorage.setItem(PRESET_TOP_KEY, parsed.presetTop);
+                }
+                if (typeof parsed.presetBottom === "string") {
+                    document.getElementById("presetBottomInput").value = parsed.presetBottom;
+                    localStorage.setItem(PRESET_BOTTOM_KEY, parsed.presetBottom);
+                }
+                if (Array.isArray(parsed.roleSlots) && parsed.roleSlots.length > 0) {
+                    roleSlots = parsed.roleSlots.map(v => (typeof v === "string" ? v : ""));
+                    saveRoleNames();
+                    renderRoleConfigGrid();
+                }
+                updateCharCounter();
+                updateScriptDisplay();
+                renderPresetPreviews();
+                document.getElementById("saveStatus").textContent = "● ファイルから復元しました";
+                return;
+            }
+        } catch (err) {
+            // プレーンテキスト（.txtなど）としてフォールバック読み込み
+        }
+
+        const textContent = typeof raw === "string" ? raw : "";
+        document.getElementById("scriptEditor").value = textContent;
+        saveScript();
+        document.getElementById("saveStatus").textContent = "● テキストから読み込みました";
+    };
+    reader.readAsText(file, "utf-8");
+}
+
+// 起動時の初期化
+loadRoleNames();
+loadScript();
+loadPresets();
+applyFontSizes();
+renderPresetPreviews();
+loop();
+syncNTP();
+setInterval(syncNTP, 60000);
+</script>
+
+</body>
+</html>
